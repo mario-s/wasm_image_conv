@@ -2,6 +2,19 @@
 
 Work in Progress!
 
+## Requirement
+
+`cargo install wasm-pack`
+
+## Building
+
+`wasm-pack build --target web`
+
+## Verify result in browser
+
+Run a webserver, e.g. `python3 -m http.server`
+
+
 ## References
 
 - https://developer.mozilla.org/en-US/docs/WebAssembly/Rust_to_wasm

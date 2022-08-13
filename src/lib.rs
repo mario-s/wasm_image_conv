@@ -49,3 +49,19 @@ fn append_image(img: DynamicImage, document: Document) -> Result<HtmlImageElemen
 
     return Ok(img_element);
 }
+
+#[test]
+fn test_read_img_ok() {
+    let img = read_img(IMG).unwrap();
+    let dim = img.dimensions();
+    assert_eq!(24, dim.0);
+    assert_eq!(24, dim.1);
+}
+
+#[test]
+fn test_read_img_err() {
+    match read_img("xyz") {
+        Ok(_) => panic!("unexpected image"),
+        Err(e) => assert_eq!("Invalid last symbol 122, offset 2.", e.to_string())
+    };
+}

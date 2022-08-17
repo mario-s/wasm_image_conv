@@ -1,8 +1,8 @@
 extern crate image;
 extern crate base64;
 
-use std::io::{Error, ErrorKind};
-use base64::decode;
+use std::io::{Cursor, Error, ErrorKind};
+use base64::{decode, encode};
 use image::{DynamicImage, GenericImageView, ImageError, ImageFormat, ImageResult};
 use image::imageops::grayscale;
 use wasm_bindgen::prelude::*;
@@ -34,6 +34,12 @@ fn read_img(data: &str) -> ImageResult<DynamicImage> {
     };
 }
 
+fn to_base64(img: DynamicImage) -> Result<String, ImageError> {
+    let mut bytes: Vec<u8> = Vec::new();
+    img.write_to(&mut Cursor::new(&mut bytes), image::ImageOutputFormat::Png)?;
+    return Ok(encode(&bytes));
+}
+
 fn append_image(img: DynamicImage, document: Document) -> Result<HtmlImageElement, Element>{
     let target = document.get_element_by_id("target").expect("document should have a target element");
 
@@ -56,6 +62,13 @@ fn test_read_img_ok() {
     let dim = img.dimensions();
     assert_eq!(24, dim.0);
     assert_eq!(24, dim.1);
+}
+
+#[test]
+fn test_to_base64() {
+    let img = read_img(IMG).unwrap();
+    let encoded = to_base64(img);
+    assert!(!encoded.unwrap().is_empty());
 }
 
 #[test]

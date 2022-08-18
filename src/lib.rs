@@ -13,14 +13,13 @@ const IMG: &str = "iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAABHNCSVQICAgIf
 
 #[wasm_bindgen]
 pub fn convert(name: &str) {
-    let greetings = format!("Hello, {}!", name);
-
-    let window = window().unwrap();
-    let document = window.document().unwrap();
+    let window = window().expect("expected a window");
+    let document = window.document().expect("expected a document");
 
     let img = read_img(IMG).unwrap();
-    let el = append_image(img, document).unwrap();
-    el.set_alt(&greetings)
+    let element = append_image(img, document).unwrap();
+    let alt = format!("Hello, {}!", name);
+    element.set_alt(&alt);
 }
 
 fn read_img(data: &str) -> ImageResult<DynamicImage> {
@@ -34,15 +33,8 @@ fn read_img(data: &str) -> ImageResult<DynamicImage> {
     };
 }
 
-fn to_base64(img: DynamicImage) -> Result<String, ImageError> {
-    let mut bytes: Vec<u8> = Vec::new();
-    img.write_to(&mut Cursor::new(&mut bytes), image::ImageOutputFormat::Png)?;
-    return Ok(encode(&bytes));
-}
-
 fn append_image(img: DynamicImage, document: Document) -> Result<HtmlImageElement, Element>{
     let target = document.get_element_by_id("target").expect("document should have a target element");
-
     let img_element = document.create_element("img")?.dyn_into::<HtmlImageElement>()?;
 
     img_element.set_name("output");
@@ -51,9 +43,26 @@ fn append_image(img: DynamicImage, document: Document) -> Result<HtmlImageElemen
     img_element.set_width(dim.0);
     img_element.set_height(dim.1);
 
+    match to_base64(img) {
+        Ok(b) => {
+            img_element.set_src(&to_source(&b));
+        }
+        _ => {}
+    }
+
     target.append_child(&img_element)?;
 
     return Ok(img_element);
+}
+
+fn to_source(encoded: &str) -> String {
+    return format!("data:image/png;base64,{}", encoded);
+}
+
+fn to_base64(img: DynamicImage) -> Result<String, ImageError> {
+    let mut bytes: Vec<u8> = vec![];
+    img.write_to(&mut Cursor::new(&mut bytes), image::ImageOutputFormat::Png)?;
+    return Ok(encode(&bytes));
 }
 
 #[test]
@@ -65,6 +74,14 @@ fn test_read_img_ok() {
 }
 
 #[test]
+fn test_read_img_err() {
+    match read_img("xyz") {
+        Ok(_) => panic!("unexpected image"),
+        Err(e) => assert_eq!("Invalid last symbol 122, offset 2.", e.to_string())
+    };
+}
+
+#[test]
 fn test_to_base64() {
     let img = read_img(IMG).unwrap();
     let encoded = to_base64(img);
@@ -72,9 +89,7 @@ fn test_to_base64() {
 }
 
 #[test]
-fn test_read_img_err() {
-    match read_img("xyz") {
-        Ok(_) => panic!("unexpected image"),
-        Err(e) => assert_eq!("Invalid last symbol 122, offset 2.", e.to_string())
-    };
+fn test_to_source() {
+    let src = to_source("xyz");
+    assert_eq!("data:image/png;base64,xyz", src);
 }

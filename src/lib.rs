@@ -4,7 +4,6 @@ extern crate base64;
 use std::io::{Cursor, Error, ErrorKind};
 use base64::{decode, encode};
 use image::{DynamicImage, GenericImageView, ImageError, ImageFormat, ImageResult};
-use image::imageops::grayscale;
 use wasm_bindgen::prelude::*;
 use web_sys::{Document, Element, HtmlImageElement, window};
 use wasm_bindgen::JsCast;
@@ -17,7 +16,7 @@ pub fn convert(name: &str) {
     let document = window.document().expect("expected a document");
 
     let img = read_img(IMG).unwrap();
-    let element = append_image(img, document).unwrap();
+    let element = append_image_element(img, document).unwrap();
     let alt = format!("Hello, {}!", name);
     element.set_alt(&alt);
 }
@@ -33,24 +32,23 @@ fn read_img(data: &str) -> ImageResult<DynamicImage> {
     };
 }
 
-fn append_image(img: DynamicImage, document: Document) -> Result<HtmlImageElement, Element>{
+fn append_image_element(img: DynamicImage, document: Document) -> Result<HtmlImageElement, Element>{
     let target = document.get_element_by_id("target").expect("document should have a target element");
     let img_element = document.create_element("img")?.dyn_into::<HtmlImageElement>()?;
-
+    target.append_child(&img_element)?;
     img_element.set_name("output");
 
     let dim = img.dimensions();
     img_element.set_width(dim.0);
     img_element.set_height(dim.1);
 
-    match to_base64(img) {
-        Ok(b) => {
-            img_element.set_src(&to_source(&b));
+    let gray = img.grayscale();
+    match to_base64(gray) {
+        Ok(encoded) => {
+            img_element.set_src(&to_source(&encoded));
         }
         _ => {}
     }
-
-    target.append_child(&img_element)?;
 
     return Ok(img_element);
 }

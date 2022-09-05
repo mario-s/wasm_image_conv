@@ -5,13 +5,37 @@
     <title>Image Converter</title>
   </head>
   <body>
+    <p><input id="input" type="file"/></p>
+
+    <p><div id="target"></div></p>
+
     <script type="module">
-      import init, {convert} from "./pkg/img_convert.js";
-      init()
-        .then(() => {
-          convert("World!")
+        import init, {convert} from "./pkg/img_convert.js";
+
+        const processFile = (file) => {
+            const reader = new FileReader();
+
+            reader.onloadend = () =>  {
+                let res = reader.result;
+                console.log(res);
+                init().then(() => {
+                    convert(res)
+                });
+            };
+
+            reader.onerror = () => {
+                console.log('reader error');
+            };
+
+            reader.readAsDataURL(file);
+        }
+
+        document.getElementById('input').addEventListener('change', function(e) {
+            let file = document.getElementById('input').files[0];
+            if (file) {
+                processFile(file);
+            }
         });
     </script>
-    <div id="target"></div>
   </body>
 </html>

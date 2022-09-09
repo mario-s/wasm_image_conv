@@ -21,21 +21,34 @@ pub fn convert(img_data: &str) {
 
 fn read_img(data: &str) -> ImageResult<DynamicImage> {
     //use matching to either return image or an ImageError
-    match decode(extract_data(data)) {
+    match decode(get_image_data(data)) {
         Ok(v) =>
-            return image::load_from_memory_with_format(v.as_slice(), ImageFormat::Png),
+            return image::load_from_memory_with_format(v.as_slice(), get_image_format(data)),
         Err(e) =>
             //create new ImageError where the source comes from the decoding
             return Err(ImageError::IoError(Error::new(ErrorKind::Other, e))),
     };
 }
 
-fn extract_data(data: &str) -> &str {
+fn get_image_data(data: &str) -> &str {
     if data.starts_with("data:") {
         let parts: Vec<&str> = data.split(",").collect();
         return parts[1];
     }
     return data;
+}
+
+fn get_image_format(data: &str) -> ImageFormat {
+    if data.starts_with("data:") {
+        let parts: Vec<&str> = data.split(";").collect();
+        let fmt = parts[0].replace("data:", "");
+        return match fmt.as_str() {
+            "image/png" => ImageFormat::Png,
+            "image/jpeg" => ImageFormat::Jpeg,
+            _ => panic!("unsupported image format")
+        };
+    }
+    return ImageFormat::Png;
 }
 
 fn append_image_element(img: DynamicImage, document: Document) -> Result<HtmlImageElement, Element>{
@@ -59,15 +72,16 @@ fn append_image_element(img: DynamicImage, document: Document) -> Result<HtmlIma
     return Ok(img_element);
 }
 
-fn to_source(encoded: &str) -> String {
-    return format!("data:image/png;base64,{}", encoded);
-}
-
 fn to_base64(img: DynamicImage) -> Result<String, ImageError> {
     let mut bytes: Vec<u8> = vec![];
     img.write_to(&mut Cursor::new(&mut bytes), image::ImageOutputFormat::Png)?;
     return Ok(encode(&bytes));
 }
+
+fn to_source(encoded: &str) -> String {
+    return format!("data:image/png;base64,{}", encoded);
+}
+
 
 #[test]
 fn test_read_img_err() {
@@ -75,6 +89,12 @@ fn test_read_img_err() {
         Ok(_) => panic!("unexpected image"),
         Err(e) => assert_eq!("Invalid last symbol 122, offset 2.", e.to_string())
     };
+}
+
+#[test]
+fn test_get_image_format() {
+    assert_eq!(ImageFormat::Png, get_image_format("data:image/png"));
+    assert_eq!(ImageFormat::Jpeg, get_image_format("data:image/jpeg"));
 }
 
 #[test]

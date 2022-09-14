@@ -9,6 +9,9 @@ description = "Webassembly to convert a color image into a grayscale."
 [lib]
 crate-type = ["cdylib"]
 
+[profile.release]
+lto = true
+
 [dependencies]
 image="0.24.3"
 base64 = "0.13.0"

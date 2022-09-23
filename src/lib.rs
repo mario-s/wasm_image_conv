@@ -12,9 +12,8 @@ use wasm_bindgen::JsCast;
 pub fn convert(data: &str) {
     let window = window().expect("expected a window");
     let document = window.document().expect("expected a document");
-    let element = document.get_element_by_id("target").expect("requires a img element with id 'target")
+    let element = document.get_element_by_id("target").expect("requires an element with id 'target")
         .dyn_into::<HtmlImageElement>().expect("expected an img element");
-
 
     let fmt = get_image_format(data);
     let img = read_img(get_image_data(data), fmt).unwrap();

@@ -5,17 +5,20 @@ use std::io::{Cursor, Error, ErrorKind};
 use base64::{decode, encode};
 use image::{DynamicImage, GenericImageView, ImageError, ImageFormat, ImageResult};
 use wasm_bindgen::prelude::*;
-use web_sys::{Document, Element, HtmlImageElement, window};
+use web_sys::{Element, HtmlImageElement, window};
 use wasm_bindgen::JsCast;
 
 #[wasm_bindgen]
 pub fn convert(data: &str) {
     let window = window().expect("expected a window");
     let document = window.document().expect("expected a document");
+    let element = document.get_element_by_id("target").expect("requires a img element with id 'target")
+        .dyn_into::<HtmlImageElement>().expect("expected an img element");
+
 
     let fmt = get_image_format(data);
     let img = read_img(get_image_data(data), fmt).unwrap();
-    let element = update_image_element(get_mime(fmt), img, document).unwrap();
+    let element = update_image_element(element, img, get_mime(fmt)).unwrap();
     let alt = format!("Hello World!");
     element.set_alt(&alt);
 }
@@ -59,10 +62,7 @@ fn read_img(data: &str, format: ImageFormat) -> ImageResult<DynamicImage> {
     };
 }
 
-fn update_image_element(mime: &str, img: DynamicImage, document: Document) -> Result<HtmlImageElement, Element>{
-    let element = document.get_element_by_id("target").expect("requires a img element with id 'target")
-        .dyn_into::<HtmlImageElement>()?;
-
+fn update_image_element(element: HtmlImageElement, img: DynamicImage, mime: &str) -> Result<HtmlImageElement, Element>{
     let dim = img.dimensions();
     element.set_width(dim.0);
     element.set_height(dim.1);

@@ -15,7 +15,7 @@ pub fn convert(data: &str) {
 
     let fmt = get_image_format(data);
     let img = read_img(get_image_data(data), fmt).unwrap();
-    let element = append_image_element(get_mime(fmt), img, document).unwrap();
+    let element = update_image_element(get_mime(fmt), img, document).unwrap();
     let alt = format!("Hello World!");
     element.set_alt(&alt);
 }
@@ -59,25 +59,23 @@ fn read_img(data: &str, format: ImageFormat) -> ImageResult<DynamicImage> {
     };
 }
 
-fn append_image_element(mime: &str, img: DynamicImage, document: Document) -> Result<HtmlImageElement, Element>{
-    let target = document.get_element_by_id("target").expect("document should have a target element");
-    let img_element = document.create_element("img")?.dyn_into::<HtmlImageElement>()?;
-    target.append_child(&img_element)?;
-    img_element.set_name("output");
+fn update_image_element(mime: &str, img: DynamicImage, document: Document) -> Result<HtmlImageElement, Element>{
+    let element = document.get_element_by_id("target").expect("requires a img element with id 'target")
+        .dyn_into::<HtmlImageElement>()?;
 
     let dim = img.dimensions();
-    img_element.set_width(dim.0);
-    img_element.set_height(dim.1);
+    element.set_width(dim.0);
+    element.set_height(dim.1);
 
     let gray = img.grayscale();
     match to_base64(gray) {
         Ok(encoded) => {
-            img_element.set_src(&to_source(mime, &encoded));
+            element.set_src(&to_source(mime, &encoded));
         }
         _ => {}
     }
 
-    return Ok(img_element);
+    return Ok(element);
 }
 
 fn to_base64(img: DynamicImage) -> Result<String, ImageError> {

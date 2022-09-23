@@ -1,6 +1,6 @@
 # Webassembly to to convert an image into grayscale
 
-Work in Progress!
+Sample about how to use a Webassemly in a Browser for image manipulation.
 
 ## Requirement
 

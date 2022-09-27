@@ -5,18 +5,21 @@ use std::io::{Cursor, Error, ErrorKind};
 use base64::{decode, encode};
 use image::{DynamicImage, GenericImageView, ImageError, ImageFormat, ImageResult};
 use wasm_bindgen::prelude::*;
-use web_sys::{Document, Element, HtmlImageElement, window};
+use web_sys::{Element, HtmlImageElement, window};
 use wasm_bindgen::JsCast;
 
 #[wasm_bindgen]
 pub fn convert(data: &str) {
+
     let document = window().and_then(|w| w.document()).expect("expected a document");
+    let element = document.get_element_by_id("target").expect("requires an element with id 'target")
+        .dyn_into::<HtmlImageElement>().expect("expected an img element");
 
     let fmt = get_image_format(data);
     let img = read_img(get_image_data(data), fmt).unwrap();
-    let element = append_image_element(get_mime(fmt), img, document).unwrap();
+    let updated = update_image_element(element, img, get_mime(fmt)).unwrap();
     let alt = format!("Hello World!");
-    element.set_alt(&alt);
+    updated.set_alt(&alt);
 }
 
 fn get_image_format(data: &str) -> ImageFormat {
@@ -58,25 +61,20 @@ fn read_img(data: &str, format: ImageFormat) -> ImageResult<DynamicImage> {
     };
 }
 
-fn append_image_element(mime: &str, img: DynamicImage, document: Document) -> Result<HtmlImageElement, Element>{
-    let target = document.get_element_by_id("target").expect("document should have a target element");
-    let img_element = document.create_element("img")?.dyn_into::<HtmlImageElement>()?;
-    target.append_child(&img_element)?;
-    img_element.set_name("output");
-
+fn update_image_element(element: HtmlImageElement, img: DynamicImage, mime: &str) -> Result<HtmlImageElement, Element>{
     let dim = img.dimensions();
-    img_element.set_width(dim.0);
-    img_element.set_height(dim.1);
+    element.set_width(dim.0);
+    element.set_height(dim.1);
 
     let gray = img.grayscale();
     match to_base64(gray) {
         Ok(encoded) => {
-            img_element.set_src(&to_source(mime, &encoded));
+            element.set_src(&to_source(mime, &encoded));
         }
         _ => {}
     }
 
-    return Ok(img_element);
+    return Ok(element);
 }
 
 fn to_base64(img: DynamicImage) -> Result<String, ImageError> {

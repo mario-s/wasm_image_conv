@@ -10,8 +10,7 @@ use wasm_bindgen::JsCast;
 
 #[wasm_bindgen]
 pub fn convert(data: &str) {
-    let window = window().expect("expected a window");
-    let document = window.document().expect("expected a document");
+    let document = window().and_then(|w| w.document()).expect("expected a document");
 
     let fmt = get_image_format(data);
     let img = read_img(get_image_data(data), fmt).unwrap();
